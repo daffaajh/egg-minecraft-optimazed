@@ -9,14 +9,25 @@ SERVER_STATE_FILE="$YURACLOUD_DIR/server_state.flag"
 # Buat direktori YuraCloud/data kalau belum ada
 mkdir -p "$YURACLOUD_DIR"
 
-# Generate random restart time antara 00:00 - 03:00 (hanya sekali saat pertama install)
+# Auto-delete logs older than 2 days
+find "$YURACLOUD_DIR" -name "*.log" -type f -mtime +2 -delete 2>/dev/null
+
+# Handle Auto-Restart Time (manual atau auto)
+RESTART_TIME=""
 if [ ! -f "$AUTORESTART_FILE" ]; then
-    RANDOM_HOUR=$(shuf -i 0-2 -n 1)
-    RANDOM_MINUTE=$(shuf -i 0-59 -n 1)
-    RESTART_TIME=$(printf "%02d:%02d" $RANDOM_HOUR $RANDOM_MINUTE)
+    # First time setup
+    if [ "${AUTO_RESTART_TIME}" == "auto" ] || [ -z "${AUTO_RESTART_TIME}" ]; then
+        # Generate random time antara 00:00 - 03:00
+        RANDOM_HOUR=$(shuf -i 0-2 -n 1)
+        RANDOM_MINUTE=$(shuf -i 0-59 -n 1)
+        RESTART_TIME=$(printf "%02d:%02d" $RANDOM_HOUR $RANDOM_MINUTE)
+    else
+        # Use admin-defined time
+        RESTART_TIME="${AUTO_RESTART_TIME}"
+    fi
     echo "Server akan restart terus-menerus pada jam $RESTART_TIME WIB" > "$AUTORESTART_FILE"
     echo "inactive" > "$STATUS_FILE"
-    echo "[$RESTART_TIME] Auto-restart schedule generated" >> "$YURACLOUD_DIR/restart.log"
+    echo "[$(TZ=Asia/Jakarta date '+%Y-%m-%d %H:%M:%S')] Auto-restart schedule set to $RESTART_TIME WIB" >> "$YURACLOUD_DIR/restart.log"
 else
     # Baca waktu restart yang sudah ada
     RESTART_TIME=$(grep -oP '\d{2}:\d{2}' "$AUTORESTART_FILE" | head -1)
@@ -26,7 +37,7 @@ fi
 echo "active" > "$STATUS_FILE"
 
 # ==========================================
-# SWAP OPTIMIZATION - Kurangi Lag saat di Swap
+# SWAP OPTIMIZATION
 # ==========================================
 
 if [ -w /proc/sys/vm/swappiness ] 2>/dev/null; then
@@ -41,7 +52,7 @@ if [ -w /sys/kernel/mm/transparent_hugepage/defrag ] 2>/dev/null; then
     echo "defer+madvise" > /sys/kernel/mm/transparent_hugepage/defrag
 fi
 
-# Java-specific swap optimization flags
+# Java-specific swap optimization
 SWAP_OPTIMIZE_FLAGS=""
 TOTAL_MEM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
 TOTAL_MEM_MB=$((TOTAL_MEM_KB / 1024))
@@ -53,7 +64,7 @@ else
 fi
 
 # ==========================================
-# STARTUP INFO (Simplified - No Verbose Logs)
+# STARTUP INFO
 # ==========================================
 
 echo "=========================================="
