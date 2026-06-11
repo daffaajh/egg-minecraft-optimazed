@@ -14,10 +14,10 @@
         "pid_limit"
     ],
     "docker_images": {
-        "Java 26 GraalVM": "ghcr.io\/yuracloud\/minecraft-graalvm:java26",
-        "Java 25 GraalVM": "ghcr.io\/yuracloud\/minecraft-graalvm:java25",
-        "Java 21 GraalVM": "ghcr.io\/yuracloud\/minecraft-graalvm:java21",
-        "Java 17 GraalVM": "ghcr.io\/yuracloud\/minecraft-graalvm:java17"
+        "Java 25 GraalVM": "ghcr.io\/daffaajh\/minecraft-graalvm:java25",
+        "Java 23 GraalVM": "ghcr.io\/daffaajh\/minecraft-graalvm:java23",
+        "Java 21 GraalVM": "ghcr.io\/daffaajh\/minecraft-graalvm:java21",
+        "Java 17 GraalVM": "ghcr.io\/daffaajh\/minecraft-graalvm:java17"
     },
     "file_denylist": [],
     "startup": "java -Xms256M -XX:MaxRAMPercentage={{MAX_RAM}} {{MC_STARTUP}} -Duser.timezone={{TIMEZONE}} --add-opens java.base/sun.security.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.net=ALL-UNNAMED -Dfile.encoding=UTF-8 -Dconsole.encoding=UTF-8 -XX:+ExitOnOutOfMemoryError -XX:ErrorFile=/tmp/java_error_%p.log -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/ -Dcom.sun.jndi.rmi.object.trustURLCodebase=false -Dcom.sun.jndi.cosnaming.object.trustURLCodebase=false -jar {{SERVER_JARFILE}}",
