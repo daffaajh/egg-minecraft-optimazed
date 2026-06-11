@@ -15,7 +15,6 @@ RUN apt-get update && apt-get install -y \
     cron \
     procps \
     tini \
-    util-linux \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Set timezone Asia/Jakarta
@@ -28,11 +27,10 @@ RUN useradd -m -d /home/container -s /bin/bash container
 # Copy scripts as root first
 COPY entrypoint.sh /entrypoint.sh
 COPY autorestart.sh /autorestart.sh
-COPY fake_cpuinfo.sh /fake_cpuinfo.sh
 
 # Set permissions
-RUN chmod +x /entrypoint.sh /autorestart.sh /fake_cpuinfo.sh && \
-    chown container:container /entrypoint.sh /autorestart.sh /fake_cpuinfo.sh
+RUN chmod +x /entrypoint.sh /autorestart.sh && \
+    chown container:container /entrypoint.sh /autorestart.sh
 
 USER container
 ENV USER=container HOME=/home/container TZ=Asia/Jakarta

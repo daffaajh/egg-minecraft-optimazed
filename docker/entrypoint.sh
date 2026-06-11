@@ -9,16 +9,6 @@ SERVER_STATE_FILE="$YURACLOUD_DIR/server_state.flag"
 # Buat direktori YuraCloud/data kalau belum ada
 mkdir -p "$YURACLOUD_DIR"
 
-# ==========================================
-# CPU FAKER - Override /proc/cpuinfo
-# ==========================================
-/fake_cpuinfo.sh
-if [ -f /tmp/cpuinfo_fake ]; then
-    mount --bind /tmp/cpuinfo_fake /proc/cpuinfo 2>/dev/null || {
-        echo "[CPU-FAKER] Warning: Cannot mount fake cpuinfo (need privileged mode)"
-    }
-fi
-
 # Auto-delete logs older than 2 days
 find "$YURACLOUD_DIR" -name "*.log" -type f -mtime +2 -delete 2>/dev/null
 
@@ -102,7 +92,7 @@ if [[ "$MODIFIED_STARTUP" == *"java"* ]]; then
 fi
 
 # Execute startup dengan suppress verbose GC logs
-eval "${MODIFIED_STARTUP}" 2>&1 | grep -v -E '^\[.*\]\[.*\]|CardTable|Compressed|Metaspace|garbage-first|CDS archive'
+eval "${MODIFIED_STARTUP}" 2>&1 | grep -v -E '^\[.*\]\[.*\]|CardTable|Compressed|Metaspace|garbage-first|CDS archive|INVTSC|invariant tsc'
 
 # Kalau server mati, set status jadi inactive dan hapus state flag
 echo "inactive" > "$STATUS_FILE"
