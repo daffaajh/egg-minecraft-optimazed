@@ -25,16 +25,16 @@ RUN ln -sf /usr/share/zoneinfo/Asia/Jakarta /etc/localtime && \
 # Setup user
 RUN useradd -m -d /home/container -s /bin/bash container
 
+# Copy scripts as root first
+COPY entrypoint.sh /entrypoint.sh
+COPY autorestart.sh /autorestart.sh
+
+# Set permissions
+RUN chmod +x /entrypoint.sh /autorestart.sh && \
+    chown container:container /entrypoint.sh /autorestart.sh
+
 USER container
 ENV USER=container HOME=/home/container TZ=Asia/Jakarta
 WORKDIR /home/container
-
-# Copy scripts
-COPY --chown=container:container ./entrypoint.sh /entrypoint.sh
-COPY --chown=container:container ./autorestart.sh /autorestart.sh
-
-USER root
-RUN chmod +x /entrypoint.sh /autorestart.sh
-USER container
 
 ENTRYPOINT ["/usr/bin/tini", "-g", "--", "/entrypoint.sh"]
