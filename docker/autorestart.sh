@@ -2,6 +2,7 @@
 
 RESTART_TIME="$1"
 SERVER_STATE_FILE="$2"
+STATUS_FILE="$3"
 YURACLOUD_DIR="$HOME/YuraCloud/data"
 
 if [ -z "$RESTART_TIME" ]; then
@@ -19,6 +20,7 @@ while true; do
     # Cek apakah server masih running (cek state flag)
     if [ ! -f "$SERVER_STATE_FILE" ]; then
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Server stopped. Auto-restart disabled." >> "$YURACLOUD_DIR/restart.log"
+        echo "inactive" > "$STATUS_FILE"
         exit 0
     fi
     
