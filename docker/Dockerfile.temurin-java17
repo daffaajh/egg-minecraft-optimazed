@@ -1,22 +1,21 @@
-FROM ghcr.io/graalvm/jdk-community:23-ol9
+FROM eclipse-temurin:17-jdk-jammy
 
 LABEL author="YuraCloud" maintainer="dapa@dapaproject.my.id"
 
 # Install dependencies
-RUN microdnf install -y \
+RUN apt-get update && apt-get install -y \
     ca-certificates \
     openssl \
     git \
     tar \
-    sqlite \
+    sqlite3 \
     fontconfig \
     tzdata \
-    iproute \
-    libstdc++ \
+    iproute2 \
+    cron \
+    procps \
     tini \
-    cronie \
-    procps-ng \
-    && microdnf clean all
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Set timezone Asia/Jakarta
 RUN ln -sf /usr/share/zoneinfo/Asia/Jakarta /etc/localtime && \

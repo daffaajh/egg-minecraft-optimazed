@@ -11,7 +11,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/minecraft-graalvm
+  IMAGE_NAME: ${{ github.repository_owner }}/minecraft-temurin
 
 jobs:
   build-and-push:
@@ -22,7 +22,7 @@ jobs:
     
     strategy:
       matrix:
-        java: [17, 21, 23, 25]
+        java: [17, 21, 25]
     
     steps:
       - name: Checkout repository
@@ -45,13 +45,13 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=java${{ matrix.java }}
-            type=raw,value=java${{ matrix.java }}-ol9
+            type=raw,value=java${{ matrix.java }}-jammy
       
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: ./docker
-          file: ./docker/Dockerfile.graalvm-java${{ matrix.java }}
+          file: ./docker/Dockerfile.temurin-java${{ matrix.java }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
