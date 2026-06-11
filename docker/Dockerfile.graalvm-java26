@@ -1,0 +1,40 @@
+FROM ghcr.io/graalvm/jdk-community:26-ol9
+
+LABEL author="YuraCloud" maintainer="dapa@dapaproject.my.id"
+
+# Install dependencies
+RUN microdnf install -y \
+    ca-certificates \
+    openssl \
+    git \
+    tar \
+    sqlite \
+    fontconfig \
+    tzdata \
+    iproute \
+    libstdc++ \
+    tini \
+    cronie \
+    procps-ng \
+    && microdnf clean all
+
+# Set timezone Asia/Jakarta
+RUN ln -sf /usr/share/zoneinfo/Asia/Jakarta /etc/localtime && \
+    echo "Asia/Jakarta" > /etc/timezone
+
+# Setup user
+RUN useradd -m -d /home/container -s /bin/bash container
+
+USER container
+ENV USER=container HOME=/home/container TZ=Asia/Jakarta
+WORKDIR /home/container
+
+# Copy scripts
+COPY --chown=container:container ./entrypoint.sh /entrypoint.sh
+COPY --chown=container:container ./autorestart.sh /autorestart.sh
+
+USER root
+RUN chmod +x /entrypoint.sh /autorestart.sh
+USER container
+
+ENTRYPOINT ["/usr/bin/tini", "-g", "--", "/entrypoint.sh"]

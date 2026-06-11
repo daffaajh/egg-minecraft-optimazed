@@ -1,0 +1,12 @@
+# Ignore files yang ga perlu masuk ke Docker build context
+test-server/
+*.md
+.git/
+.gitignore
+*.log
+*.jar
+server.properties
+world/
+plugins/
+cache/
+logs/
