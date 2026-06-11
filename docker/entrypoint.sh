@@ -29,20 +29,16 @@ echo "active" > "$STATUS_FILE"
 # SWAP OPTIMIZATION - Kurangi Lag saat di Swap
 # ==========================================
 
-# Tuning swap behavior (kalau container punya akses ke sysctl)
 if [ -w /proc/sys/vm/swappiness ] 2>/dev/null; then
     echo 10 > /proc/sys/vm/swappiness
-    echo "[SWAP] Set swappiness=10 (minimal swap usage)" >> "$YURACLOUD_DIR/startup.log"
 fi
 
 if [ -w /proc/sys/vm/vfs_cache_pressure ] 2>/dev/null; then
     echo 50 > /proc/sys/vm/vfs_cache_pressure
-    echo "[SWAP] Set vfs_cache_pressure=50" >> "$YURACLOUD_DIR/startup.log"
 fi
 
 if [ -w /sys/kernel/mm/transparent_hugepage/defrag ] 2>/dev/null; then
     echo "defer+madvise" > /sys/kernel/mm/transparent_hugepage/defrag
-    echo "[SWAP] Set THP defrag=defer+madvise" >> "$YURACLOUD_DIR/startup.log"
 fi
 
 # Java-specific swap optimization flags
@@ -51,31 +47,25 @@ TOTAL_MEM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
 TOTAL_MEM_MB=$((TOTAL_MEM_KB / 1024))
 
 if [ "$TOTAL_MEM_MB" -lt 2048 ]; then
-    SWAP_OPTIMIZE_FLAGS="-XX:+UseZGC -XX:+ZGenerational -XX:SoftMaxHeapSize=80% -XX:ZCollectionInterval=5 -XX:ZFragmentationLimit=5 -XX:+UseTransparentHugePages -XX:+AlwaysPreTouch"
-    echo "[SWAP] Low memory detected ($TOTAL_MEM_MB MB). Applying aggressive swap optimization." >> "$YURACLOUD_DIR/startup.log"
+    SWAP_OPTIMIZE_FLAGS="-XX:+UseZGC -XX:+ZGenerational -XX:SoftMaxHeapSize=80% -XX:ZCollectionInterval=5 -XX:ZFragmentationLimit=5 -XX:+AlwaysPreTouch"
 else
-    SWAP_OPTIMIZE_FLAGS="-XX:+UseTransparentHugePages -XX:+AlwaysPreTouch"
-    echo "[SWAP] Normal memory ($TOTAL_MEM_MB MB). Applying standard optimization." >> "$YURACLOUD_DIR/startup.log"
+    SWAP_OPTIMIZE_FLAGS="-XX:+AlwaysPreTouch"
 fi
 
 # ==========================================
-# STARTUP INFO
+# STARTUP INFO (Simplified - No Verbose Logs)
 # ==========================================
 
 echo "=========================================="
-echo "YuraCloud Optix Container"
+echo "       YuraCloud Optix Container"
 echo "=========================================="
-echo "Timezone: Asia/Jakarta (WIB)"
-echo "Current Time: $(date '+%Y-%m-%d %H:%M:%S %Z')"
-java -version 2>&1 | head -1
 echo ""
-echo "Memory: ${TOTAL_MEM_MB}MB total"
-echo "Swap Optimization: ENABLED"
+echo "Timezone: Asia/Jakarta (WIB)"
+echo "Local Time: $(TZ=Asia/Jakarta date '+%Y-%m-%d %H:%M:%S')"
 echo ""
 cat "$AUTORESTART_FILE"
-echo "Auto-Restart Status: ACTIVE"
-echo "=========================================="
 echo ""
+echo "=========================================="
 
 # Jalankan autorestart monitor di background
 /autorestart.sh "$RESTART_TIME" "$SERVER_STATE_FILE" "$STATUS_FILE" &
@@ -88,13 +78,11 @@ MODIFIED_STARTUP=$(echo "${STARTUP}" | sed -e 's/{{/${/g' -e 's/}}/}/g')
 
 if [[ "$MODIFIED_STARTUP" == *"java"* ]]; then
     MODIFIED_STARTUP=$(echo "$MODIFIED_STARTUP" | sed "s/java /java $SWAP_OPTIMIZE_FLAGS /")
-    echo "[SWAP] Injected optimization flags into startup" >> "$YURACLOUD_DIR/startup.log"
 fi
 
-echo "[STARTUP] Executing: $MODIFIED_STARTUP" >> "$YURACLOUD_DIR/startup.log"
-eval "${MODIFIED_STARTUP}"
+# Execute startup dengan suppress verbose GC logs
+eval "${MODIFIED_STARTUP}" 2>&1 | grep -v -E '^\[.*\]\[.*\]|CardTable|Compressed|Metaspace|garbage-first|CDS archive'
 
 # Kalau server mati, set status jadi inactive dan hapus state flag
 echo "inactive" > "$STATUS_FILE"
 rm -f "$SERVER_STATE_FILE"
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Server stopped. Auto-restart set to inactive." >> "$YURACLOUD_DIR/restart.log"
