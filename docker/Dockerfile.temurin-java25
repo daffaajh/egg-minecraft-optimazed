@@ -18,8 +18,9 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install rcon-cli for restart warnings
-RUN curl -fsSL https://github.com/gorcon/rcon-cli/releases/download/v0.10.3/rcon-0.10.3-amd64_linux.tar.gz \
-    | tar xz -C /usr/local/bin rcon
+RUN curl -fsSL -o /tmp/rcon.tar.gz https://github.com/gorcon/rcon-cli/releases/download/v0.10.3/rcon-0.10.3-amd64_linux.tar.gz \
+    && tar xzf /tmp/rcon.tar.gz -C /usr/local/bin rcon \
+    && rm -f /tmp/rcon.tar.gz
 
 # Set timezone Asia/Jakarta
 RUN ln -sf /usr/share/zoneinfo/Asia/Jakarta /etc/localtime && \
