@@ -4,44 +4,44 @@
         "version": "PTDL_v2",
         "update_url": null
     },
-    "exported_at": "2026-06-11T20:04:24+07:00",
+    "exported_at": "2026-06-12T13:26:12+07:00",
     "name": "Purpur Optimized",
-    "author": "parker@pterodactyl.io",
-    "description": "Optimized Purpur Server - High Performance CPU & Network Configuration. Develoved by dapa@dapaproject.my.id",
+    "author": "dapa@dapaproject.my.id",
+    "description": "Optimized Purpur Server - High Performance CPU & Network Configuration. Developed by dapa@dapaproject.my.id",
     "features": [
         "eula",
         "java_version",
         "pid_limit"
     ],
     "docker_images": {
-        "Java 25 Optix": "ghcr.io\/daffaajh\/optix:java25",
-        "Java 21 Optix": "ghcr.io\/daffaajh\/optix:java21",
-        "Java 17 Optix": "ghcr.io\/daffaajh\/optix:java17"
+        "Java 25 Optix": "ghcr.io/daffaajh/optix:java25",
+        "Java 21 Optix": "ghcr.io/daffaajh/optix:java21",
+        "Java 17 Optix": "ghcr.io/daffaajh/optix:java17"
     },
     "file_denylist": [],
     "startup": "java -Xms256M -XX:MaxRAMPercentage={{MAX_RAM}} {{MC_STARTUP}} -Duser.timezone={{TIMEZONE}} --add-opens java.base/sun.security.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.net=ALL-UNNAMED -Dfile.encoding=UTF-8 -Dconsole.encoding=UTF-8 -XX:+ExitOnOutOfMemoryError -XX:ErrorFile=/tmp/java_error_%p.log -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/ -Dcom.sun.jndi.rmi.object.trustURLCodebase=false -Dcom.sun.jndi.cosnaming.object.trustURLCodebase=false -jar {{SERVER_JARFILE}}",
     "config": {
-        "files": "{\r\n    \"server.properties\": {\r\n        \"parser\": \"properties\",\r\n        \"find\": {\r\n            \"server-ip\": \"0.0.0.0\",\r\n            \"server-port\": \"{{server.build.default.port}}\",\r\n            \"query.port\": \"{{server.build.default.port}}\"\r\n        }\r\n    }\r\n}",
+        "files": "{\r\n    \"server.properties\": {\r\n        \"parser\": \"properties\",\r\n        \"find\": {\r\n            \"server-ip\": \"0.0.0.0\",\r\n            \"server-port\": \"{{server.build.default.port}}\",\r\n            \"query.port\": \"{{server.build.default.port}}\",\r\n            \"network-compression-threshold\": \"64\",\r\n            \"enable-rcon\": \"true\",\r\n            \"rcon.password\": \"yuracloud\",\r\n            \"rcon.port\": \"25575\"\r\n        }\r\n    }\r\n}",
         "startup": "{\r\n    \"done\": \")! For help, type \"\r\n}",
         "logs": "{}",
         "stop": "stop"
     },
     "scripts": {
         "installation": {
-            "script": "#!\/bin\/ash\r\n# Paper Installation Script\r\n#\r\n# Server Files: \/mnt\/server\r\nPROJECT=purpur\r\n\r\nif [ -n \"${DL_PATH}\" ]; then\r\n\techo -e \"Using supplied download url: ${DL_PATH}\"\r\n\tDOWNLOAD_URL=`eval echo $(echo ${DL_PATH} | sed -e 's\/{{\/${\/g' -e 's\/}}\/}\/g')`\r\nelse\r\n\tVER_EXISTS=`curl -s https:\/\/api.purpurmc.org\/v2\/${PROJECT} | jq -r --arg VERSION $MINECRAFT_VERSION '.versions[] | contains($VERSION)' | grep true`\r\n\tLATEST_VERSION=`curl -s https:\/\/api.purpurmc.org\/v2\/${PROJECT} | jq -r '.versions' | jq -r '.[-1]'`\r\n\r\n\tif [ \"${VER_EXISTS}\" == \"true\" ]; then\r\n\t\techo -e \"Version is valid. Using version ${MINECRAFT_VERSION}\"\r\n\telse\r\n\t\techo -e \"Specified version not found. Using the latest ${PROJECT} version\"\r\n\t\tMINECRAFT_VERSION=${LATEST_VERSION}\r\n\tfi\r\n\t\r\n\tBUILD_EXISTS=`curl -s https:\/\/api.purpurmc.org\/v2\/${PROJECT}\/${MINECRAFT_VERSION} | jq -r --arg BUILD ${BUILD_NUMBER} '.builds.all | tostring | contains($BUILD)' | grep true`\r\n\tLATEST_BUILD=`curl -s https:\/\/api.purpurmc.org\/v2\/${PROJECT}\/${MINECRAFT_VERSION} | jq -r '.builds.latest'`\r\n\t\r\n\tif [ \"${BUILD_EXISTS}\" == \"true\" ]; then\r\n\t\techo -e \"Build is valid for version ${MINECRAFT_VERSION}. Using build ${BUILD_NUMBER}\"\r\n\telse\r\n\t\techo -e \"Using the latest ${PROJECT} build for version ${MINECRAFT_VERSION}\"\r\n\t\tBUILD_NUMBER=${LATEST_BUILD}\r\n\tfi\r\n\t\r\n\tJAR_NAME=${PROJECT}-${MINECRAFT_VERSION}-${BUILD_NUMBER}.jar\r\n\t\r\n\techo \"Version being downloaded\"\r\n\techo -e \"MC Version: ${MINECRAFT_VERSION}\"\r\n\techo -e \"Build: ${BUILD_NUMBER}\"\r\n\techo -e \"JAR Name of Build: ${JAR_NAME}\"\r\n\tDOWNLOAD_URL=https:\/\/api.purpurmc.org\/v2\/${PROJECT}\/${MINECRAFT_VERSION}\/${BUILD_NUMBER}\/download\r\nfi\r\n\r\ncd \/mnt\/server\r\n\r\necho -e \"Running curl -o ${SERVER_JARFILE} ${DOWNLOAD_URL}\"\r\n\r\nif [ -f ${SERVER_JARFILE} ]; then\r\n\tmv ${SERVER_JARFILE} ${SERVER_JARFILE}.old\r\nfi\r\n\r\ncurl -o ${SERVER_JARFILE} ${DOWNLOAD_URL}\r\n\r\nif [ ! -f server.properties ]; then\r\n    echo -e \"Downloading MC server.properties\"\r\n    curl -o server.properties https:\/\/raw.githubusercontent.com\/parkervcp\/eggs\/master\/minecraft\/java\/server.properties\r\nfi\r\n\r\n# Setup YuraCloud auto-restart system\r\nmkdir -p YuraCloud\/data\r\n\r\nif [ \"${AUTO_RESTART_TIME}\" == \"auto\" ] || [ -z \"${AUTO_RESTART_TIME}\" ]; then\r\n\tRANDOM_HOUR=$(shuf -i 0-2 -n 1)\r\n\tRANDOM_MINUTE=$(shuf -i 0-59 -n 1)\r\n\tRESTART_TIME=$(printf \"%02d:%02d\" $RANDOM_HOUR $RANDOM_MINUTE)\r\n\tRESTART_MODE=\"Auto-generated\"\r\nelse\r\n\tRESTART_TIME=\"${AUTO_RESTART_TIME}\"\r\n\tRESTART_MODE=\"Admin-defined\"\r\nfi\r\n\r\necho \"Server akan restart terus-menerus pada jam $RESTART_TIME WIB\" > YuraCloud\/data\/autorestart.txt\r\necho \"inactive\" > YuraCloud\/data\/autorestart_status.txt\r\necho \"[INSTALL] Auto-restart schedule: $RESTART_TIME WIB ($RESTART_MODE)\" >> YuraCloud\/data\/restart.log\r\n\r\necho -e \"-------------------------------------------------\"\r\necho -e \"      INSTALLATION COMPLETED SUCCESSFULLY\"\r\necho -e \"-------------------------------------------------\"\r\necho -e \" Author         : dapa@dapaproject.my.id\"\r\necho -e \" Server UUID    : ${P_SERVER_UUID}\"\r\necho -e \" MC Version     : ${MINECRAFT_VERSION}\"\r\necho -e \" Build Number   : ${BUILD_NUMBER}\"\r\necho -e \"-------------------------------------------------\"\r\necho -e \" Auto-Restart   : Enabled\"\r\necho -e \" Restart Time   : $RESTART_TIME WIB (Asia\/Jakarta)\"\r\necho -e \" Restart Mode   : $RESTART_MODE\"\r\necho -e \" Status         : Will activate on first server start\"\r\necho -e \"-------------------------------------------------\"\r\necho -e \" Powered By     : YuraCloud\"\r\necho -e \"-------------------------------------------------\"",
-            "container": "ghcr.io\/parkervcp\/installers:alpine",
+            "script": "#!/bin/ash\r\n# Purpur Installation Script\r\n#\r\n# Server Files: /mnt/server\r\nPROJECT=purpur\r\n\r\nif [ -n \"${DL_PATH}\" ]; then\r\n\techo -e \"Using supplied download url: ${DL_PATH}\"\r\n\tDOWNLOAD_URL=`eval echo $(echo ${DL_PATH} | sed -e 's/{{/${/g' -e 's/}}/}/g')`\r\nelse\r\n\tif [ \"${MINECRAFT_VERSION}\" = \"latest\" ] || [ -z \"${MINECRAFT_VERSION}\" ]; then\r\n\t\tMINECRAFT_VERSION=`curl -fsSL \"https://api.purpurmc.org/v2/${PROJECT}\" | jq -r '[.versions[] | select(test(\"^1\\\\.\"))] | .[-1]'`\r\n\t\techo -e \"Using latest ${PROJECT} version: ${MINECRAFT_VERSION}\"\r\n\telse\r\n\t\tVER_EXISTS=`curl -fsSL \"https://api.purpurmc.org/v2/${PROJECT}\" | jq -r --arg VERSION \"${MINECRAFT_VERSION}\" '.versions[] | select(. == $VERSION)' | grep -m1 .`\r\n\t\tif [ -n \"${VER_EXISTS}\" ]; then\r\n\t\t\techo -e \"Version is valid. Using version ${MINECRAFT_VERSION}\"\r\n\t\telse\r\n\t\t\tLATEST_VERSION=`curl -fsSL \"https://api.purpurmc.org/v2/${PROJECT}\" | jq -r '[.versions[] | select(test(\"^1\\\\.\"))] | .[-1]'`\r\n\t\t\techo -e \"Specified version not found. Using the latest ${PROJECT} version: ${LATEST_VERSION}\"\r\n\t\t\tMINECRAFT_VERSION=${LATEST_VERSION}\r\n\t\tfi\r\n\tfi\r\n\r\n\tif [ \"${BUILD_NUMBER}\" = \"latest\" ] || [ -z \"${BUILD_NUMBER}\" ]; then\r\n\t\tBUILD_NUMBER=`curl -fsSL \"https://api.purpurmc.org/v2/${PROJECT}/${MINECRAFT_VERSION}\" | jq -r '.builds.latest'`\r\n\t\techo -e \"Using latest build: ${BUILD_NUMBER}\"\r\n\telse\r\n\t\tBUILD_EXISTS=`curl -fsSL \"https://api.purpurmc.org/v2/${PROJECT}/${MINECRAFT_VERSION}\" | jq -e --argjson BUILD \"${BUILD_NUMBER}\" '.builds.all | index($BUILD) != null' >/dev/null 2>&1 && echo true || echo false`\r\n\t\tif [ \"${BUILD_EXISTS}\" = \"true\" ]; then\r\n\t\t\techo -e \"Build is valid for version ${MINECRAFT_VERSION}. Using build ${BUILD_NUMBER}\"\r\n\t\telse\r\n\t\t\tLATEST_BUILD=`curl -fsSL \"https://api.purpurmc.org/v2/${PROJECT}/${MINECRAFT_VERSION}\" | jq -r '.builds.latest'`\r\n\t\t\techo -e \"Using the latest ${PROJECT} build for version ${MINECRAFT_VERSION}: ${LATEST_BUILD}\"\r\n\t\t\tBUILD_NUMBER=${LATEST_BUILD}\r\n\t\tfi\r\n\tfi\r\n\r\n\tJAR_NAME=${PROJECT}-${MINECRAFT_VERSION}-${BUILD_NUMBER}.jar\r\n\r\n\techo \"Version being downloaded\"\r\n\techo -e \"MC Version: ${MINECRAFT_VERSION}\"\r\n\techo -e \"Build: ${BUILD_NUMBER}\"\r\n\techo -e \"JAR Name of Build: ${JAR_NAME}\"\r\n\tDOWNLOAD_URL=https://api.purpurmc.org/v2/${PROJECT}/${MINECRAFT_VERSION}/${BUILD_NUMBER}/download\r\nfi\r\n\r\ncd /mnt/server\r\n\r\necho -e \"Running curl -o ${SERVER_JARFILE} ${DOWNLOAD_URL}\"\r\n\r\nif [ -f ${SERVER_JARFILE} ]; then\r\n\tmv ${SERVER_JARFILE} ${SERVER_JARFILE}.old\r\nfi\r\n\r\nif ! curl -fsSL -o \"${SERVER_JARFILE}\" \"${DOWNLOAD_URL}\"; then\r\n\techo -e \"ERROR: Failed to download server jar from ${DOWNLOAD_URL}\"\r\n\texit 1\r\nfi\r\n\r\nif [ ! -f server.properties ]; then\r\n\techo -e \"Downloading MC server.properties\"\r\n\tcurl -fsSL -o server.properties https://raw.githubusercontent.com/parkervcp/eggs/master/minecraft/java/server.properties\r\nfi\r\n\r\nmkdir -p YuraCloud/data\r\n\r\nif [ \"${AUTO_RESTART_TIME}\" = \"auto\" ] || [ -z \"${AUTO_RESTART_TIME}\" ]; then\r\n\tRANDOM_HOUR=$(shuf -i 0-2 -n 1)\r\n\tRANDOM_MINUTE=$(shuf -i 0-59 -n 1)\r\n\tRESTART_TIME=$(printf \"%02d:%02d\" $RANDOM_HOUR $RANDOM_MINUTE)\r\n\tRESTART_MODE=\"Auto-generated\"\r\nelif echo \"${AUTO_RESTART_TIME}\" | grep -qE '^([01][0-9]|2[0-3]):[0-5][0-9]$'; then\r\n\tRESTART_TIME=\"${AUTO_RESTART_TIME}\"\r\n\tRESTART_MODE=\"Admin-defined\"\r\nelse\r\n\tRANDOM_HOUR=$(shuf -i 0-2 -n 1)\r\n\tRANDOM_MINUTE=$(shuf -i 0-59 -n 1)\r\n\tRESTART_TIME=$(printf \"%02d:%02d\" $RANDOM_HOUR $RANDOM_MINUTE)\r\n\tRESTART_MODE=\"Auto-generated (invalid time)\"\r\nfi\r\n\r\necho \"Server akan restart otomatis pada jam $RESTART_TIME WIB\" > YuraCloud/data/autorestart.txt\r\necho \"inactive\" > YuraCloud/data/autorestart_status.txt\r\necho \"[INSTALL] Auto-restart schedule: $RESTART_TIME WIB ($RESTART_MODE)\" >> YuraCloud/data/restart.log\r\n\r\necho -e \"-------------------------------------------------\"\r\necho -e \"      INSTALLATION COMPLETED SUCCESSFULLY\"\r\necho -e \"-------------------------------------------------\"\r\necho -e \" Author         : dapa@dapaproject.my.id\"\r\necho -e \" Server UUID    : ${P_SERVER_UUID}\"\r\necho -e \" MC Version     : ${MINECRAFT_VERSION}\"\r\necho -e \" Build Number   : ${BUILD_NUMBER}\"\r\necho -e \"-------------------------------------------------\"\r\necho -e \" Auto-Restart   : Enabled\"\r\necho -e \" Restart Time   : $RESTART_TIME WIB (Asia/Jakarta)\"\r\necho -e \" Restart Mode   : $RESTART_MODE\"\r\necho -e \" Status         : Will activate on first server start\"\r\necho -e \"-------------------------------------------------\"\r\necho -e \" Powered By     : YuraCloud\"\r\necho -e \"-------------------------------------------------\"\r\n",
+            "container": "ghcr.io/pterodactyl/installers:alpine",
             "entrypoint": "ash"
         }
     },
     "variables": [
         {
             "name": "Minecraft Version",
-            "description": "The version of minecraft to download. \r\n\r\nLeave at latest to always get the latest version. Invalid versions will default to latest.",
+            "description": "Versi Minecraft yang akan diunduh.\r\n\r\nIsi 'latest' untuk versi terbaru, atau versi spesifik seperti 1.21.1. Versi tidak valid akan otomatis diganti ke latest.",
             "env_variable": "MINECRAFT_VERSION",
-            "default_value": "1.20.1",
+            "default_value": "latest",
             "user_viewable": true,
             "user_editable": true,
-            "rules": "nullable|string|max:20",
+            "rules": "required|string|max:20",
             "field_type": "text"
         },
         {
@@ -51,7 +51,7 @@
             "default_value": "server.jar",
             "user_viewable": true,
             "user_editable": true,
-            "rules": "required|regex:\/^([\\w\\d._-]+)(\\.jar)$\/",
+            "rules": "required|regex:/^([\\w\\d._-]+)(\\.jar)$/",
             "field_type": "text"
         },
         {
@@ -66,7 +66,7 @@
         },
         {
             "name": "Build Number",
-            "description": "The build number for the paper release.\r\n\r\nLeave at latest to always get the latest version. Invalid versions will default to latest.",
+            "description": "Nomor build untuk release server.\r\n\r\nIsi 'latest' untuk build terbaru. Build tidak valid akan otomatis diganti ke latest.",
             "env_variable": "BUILD_NUMBER",
             "default_value": "latest",
             "user_viewable": false,
@@ -78,7 +78,7 @@
             "name": "Startup",
             "description": "Custom Flag Startup - Optimized G1GC for CPU, Memory & Network by YuraCloud Optix",
             "env_variable": "MC_STARTUP",
-            "default_value": "-XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UnlockExperimentalVMOptions -XX:+DisableExplicitGC -XX:+AlwaysPreTouch -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:G1HeapRegionSize=8M -XX:G1ReservePercent=20 -XX:G1HeapWastePercent=5 -XX:G1MixedGCCountTarget=4 -XX:InitiatingHeapOccupancyPercent=15 -XX:G1MixedGCLiveThresholdPercent=90 -XX:G1RSetUpdatingPauseTimePercent=5 -XX:SurvivorRatio=32 -XX:+PerfDisableSharedMem -XX:MaxTenuringThreshold=1 -XX:+UseContainerSupport -XX:+UseNUMA -XX:+UseFastUnorderedTimeStamps -Djava.net.preferIPv4Stack=true -Dio.netty.recycler.maxCapacityPerThread=0 -XX:+OptimizeStringConcat -XX:+UseStringDeduplication -XX:+UseCompressedOops -XX:+UseCompressedClassPointers -XX:ReservedCodeCacheSize=256M -XX:+UseLargePages -XX:LargePageSizeInBytes=2m -XX:+TieredCompilation -Djdk.nio.maxCachedBufferSize=262144 -Dfile.encoding=UTF-8",
+            "default_value": "-XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UnlockExperimentalVMOptions -XX:+DisableExplicitGC -XX:+AlwaysPreTouch -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:G1HeapRegionSize=8M -XX:G1ReservePercent=20 -XX:G1HeapWastePercent=5 -XX:G1MixedGCCountTarget=4 -XX:InitiatingHeapOccupancyPercent=20 -XX:G1MixedGCLiveThresholdPercent=90 -XX:G1RSetUpdatingPauseTimePercent=5 -XX:SurvivorRatio=32 -XX:+PerfDisableSharedMem -XX:MaxTenuringThreshold=1 -XX:+UseContainerSupport -XX:+UseFastUnorderedTimeStamps -Djava.net.preferIPv4Stack=true -Dio.netty.recycler.maxCapacityPerThread=0 -XX:+UseStringDeduplication -XX:+UseCompressedOops -XX:+UseCompressedClassPointers -XX:ReservedCodeCacheSize=256M -XX:+TieredCompilation -Djdk.nio.maxCachedBufferSize=262144 -Dfile.encoding=UTF-8",
             "user_viewable": false,
             "user_editable": false,
             "rules": "nullable|string|max:5000",
@@ -91,14 +91,14 @@
             "default_value": "90",
             "user_viewable": true,
             "user_editable": true,
-            "rules": "nullable|numeric|digits:2|max:95",
+            "rules": "nullable|numeric|min:1|max:95",
             "field_type": "text"
         },
         {
             "name": "Timezone",
             "description": "Time For Java",
             "env_variable": "TIMEZONE",
-            "default_value": "Asia\/Jakarta",
+            "default_value": "Asia/Jakarta",
             "user_viewable": false,
             "user_editable": false,
             "rules": "required|string|max:50",

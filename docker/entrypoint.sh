@@ -17,7 +17,7 @@ RESTART_TIME=""
 if [ ! -f "$AUTORESTART_FILE" ]; then
     # First time setup
     if [ "${AUTO_RESTART_TIME}" == "auto" ] || [ -z "${AUTO_RESTART_TIME}" ]; then
-        # Generate random time antara 00:00 - 03:00
+        # Generate random time antara 00:00 - 02:59 (consistent with install script)
         RANDOM_HOUR=$(shuf -i 0-2 -n 1)
         RANDOM_MINUTE=$(shuf -i 0-59 -n 1)
         RESTART_TIME=$(printf "%02d:%02d" $RANDOM_HOUR $RANDOM_MINUTE)
@@ -52,15 +52,14 @@ if [ -w /sys/kernel/mm/transparent_hugepage/defrag ] 2>/dev/null; then
     echo "defer+madvise" > /sys/kernel/mm/transparent_hugepage/defrag
 fi
 
-# Java-specific swap optimization
-SWAP_OPTIMIZE_FLAGS=""
+# Java-specific memory tuning (compatible with G1GC from MC_STARTUP, all Java versions)
+MEMORY_TUNING_FLAGS=""
 TOTAL_MEM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
 TOTAL_MEM_MB=$((TOTAL_MEM_KB / 1024))
 
 if [ "$TOTAL_MEM_MB" -lt 2048 ]; then
-    SWAP_OPTIMIZE_FLAGS="-XX:+UseZGC -XX:+ZGenerational -XX:SoftMaxHeapSize=80% -XX:ZCollectionInterval=5 -XX:ZFragmentationLimit=5 -XX:+AlwaysPreTouch"
-else
-    SWAP_OPTIMIZE_FLAGS="-XX:+AlwaysPreTouch"
+    # Low-memory tuning: reduce GC overhead without replacing G1GC
+    MEMORY_TUNING_FLAGS="-XX:G1HeapRegionSize=4M -XX:InitiatingHeapOccupancyPercent=30 -XX:G1HeapWastePercent=8 -XX:SoftRefLRUPolicyMSPerMB=0"
 fi
 
 # ==========================================
@@ -78,21 +77,38 @@ cat "$AUTORESTART_FILE"
 echo ""
 echo "=========================================="
 
+# Sync RCON port to server-port + 1 (dynamic for Pterodactyl random ports)
+SERVER_PROPS="$HOME/server.properties"
+if [ -f "$SERVER_PROPS" ]; then
+    SERVER_PORT=$(grep -E '^server-port=' "$SERVER_PROPS" | cut -d= -f2 | tr -d '[:space:]')
+    if [ -n "$SERVER_PORT" ]; then
+        RCON_PORT=$((SERVER_PORT + 1))
+        sed -i "s/^rcon.port=.*/rcon.port=$RCON_PORT/" "$SERVER_PROPS"
+        # Enable RCON if not already enabled
+        grep -q '^enable-rcon=true' "$SERVER_PROPS" || sed -i 's/^enable-rcon=.*/enable-rcon=true/' "$SERVER_PROPS"
+        # Set default RCON password if empty
+        if ! grep -qE '^rcon\.password=.+' "$SERVER_PROPS"; then
+            sed -i 's/^rcon.password=.*/rcon.password=yuracloud/' "$SERVER_PROPS"
+        fi
+    fi
+fi
+
 # Jalankan autorestart monitor di background
 /autorestart.sh "$RESTART_TIME" "$SERVER_STATE_FILE" "$STATUS_FILE" &
 
 # Tandai bahwa server sedang running
 touch "$SERVER_STATE_FILE"
 
-# Inject swap optimization flags
+# Inject memory tuning flags
 MODIFIED_STARTUP=$(echo "${STARTUP}" | sed -e 's/{{/${/g' -e 's/}}/}/g')
 
-if [[ "$MODIFIED_STARTUP" == *"java"* ]]; then
-    MODIFIED_STARTUP=$(echo "$MODIFIED_STARTUP" | sed "s/java /java $SWAP_OPTIMIZE_FLAGS /")
+if [[ "$MODIFIED_STARTUP" == *"java"* ]] && [ -n "$MEMORY_TUNING_FLAGS" ]; then
+    MODIFIED_STARTUP=$(echo "$MODIFIED_STARTUP" | sed "s/java /java $MEMORY_TUNING_FLAGS /")
 fi
 
-# Execute startup dengan suppress verbose GC logs
-eval "${MODIFIED_STARTUP}" 2>&1 | grep -v -E '^\[.*\]\[.*\]|CardTable|Compressed|Metaspace|garbage-first|CDS archive|INVTSC|invariant tsc'
+# Execute startup dengan targeted JVM log filter
+# Only filter JVM internal logs (prefixed with [timestamp][thread]), NOT server output
+eval "${MODIFIED_STARTUP}" 2>&1 | grep -v -E '^\[[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}\+[0-9]{4}\]\['
 
 # Kalau server mati, set status jadi inactive dan hapus state flag
 echo "inactive" > "$STATUS_FILE"
