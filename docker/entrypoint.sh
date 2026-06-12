@@ -5,6 +5,7 @@ YURACLOUD_DIR="$HOME/YuraCloud/data"
 AUTORESTART_FILE="$YURACLOUD_DIR/autorestart.txt"
 STATUS_FILE="$YURACLOUD_DIR/autorestart_status.txt"
 SERVER_STATE_FILE="$YURACLOUD_DIR/server_state.flag"
+CMD_FIFO="/tmp/minecraft-cmd.fifo"
 
 # Buat direktori YuraCloud/data kalau belum ada
 mkdir -p "$YURACLOUD_DIR"
@@ -77,24 +78,18 @@ cat "$AUTORESTART_FILE"
 echo ""
 echo "=========================================="
 
-# Sync RCON port to server-port + 1 (dynamic for Pterodactyl random ports)
-SERVER_PROPS="$HOME/server.properties"
-if [ -f "$SERVER_PROPS" ]; then
-    SERVER_PORT=$(grep -E '^server-port=' "$SERVER_PROPS" | cut -d= -f2 | tr -d '[:space:]')
-    if [ -n "$SERVER_PORT" ]; then
-        RCON_PORT=$((SERVER_PORT + 1))
-        sed -i "s/^rcon.port=.*/rcon.port=$RCON_PORT/" "$SERVER_PROPS"
-        # Enable RCON if not already enabled
-        grep -q '^enable-rcon=true' "$SERVER_PROPS" || sed -i 's/^enable-rcon=.*/enable-rcon=true/' "$SERVER_PROPS"
-        # Set default RCON password if empty
-        if ! grep -qE '^rcon\.password=.+' "$SERVER_PROPS"; then
-            sed -i 's/^rcon.password=.*/rcon.password=yuracloud/' "$SERVER_PROPS"
-        fi
-    fi
-fi
+# ==========================================
+# COMMAND FIFO (for restart warnings from autorestart.sh)
+# ==========================================
+# Create named pipe for sending commands to server stdin
+rm -f "$CMD_FIFO"
+mkfifo "$CMD_FIFO"
+
+# Bridge Pterodactyl console input to FIFO (so panel console still works)
+cat <&0 >> "$CMD_FIFO" &
 
 # Jalankan autorestart monitor di background
-/autorestart.sh "$RESTART_TIME" "$SERVER_STATE_FILE" "$STATUS_FILE" &
+/autorestart.sh "$RESTART_TIME" "$SERVER_STATE_FILE" "$STATUS_FILE" "$CMD_FIFO" &
 
 # Tandai bahwa server sedang running
 touch "$SERVER_STATE_FILE"
@@ -106,10 +101,10 @@ if [[ "$MODIFIED_STARTUP" == *"java"* ]] && [ -n "$MEMORY_TUNING_FLAGS" ]; then
     MODIFIED_STARTUP=$(echo "$MODIFIED_STARTUP" | sed "s/java /java $MEMORY_TUNING_FLAGS /")
 fi
 
-# Execute startup dengan targeted JVM log filter
-# Only filter JVM internal logs (prefixed with [timestamp][thread]), NOT server output
-eval "${MODIFIED_STARTUP}" 2>&1 | grep -v -E '^\[[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}\+[0-9]{4}\]\['
+# Execute startup - server reads commands from FIFO (enables restart warnings)
+eval "${MODIFIED_STARTUP}" < "$CMD_FIFO" 2>&1 | grep -v -E '^\[[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}\+[0-9]{4}\]\['
 
 # Kalau server mati, set status jadi inactive dan hapus state flag
 echo "inactive" > "$STATUS_FILE"
 rm -f "$SERVER_STATE_FILE"
+rm -f "$CMD_FIFO"

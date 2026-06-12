@@ -21,7 +21,7 @@
     "file_denylist": [],
     "startup": "java -Xms256M -XX:MaxRAMPercentage={{MAX_RAM}} {{MC_STARTUP}} -Duser.timezone={{TIMEZONE}} --add-opens java.base/sun.security.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.net=ALL-UNNAMED -Dfile.encoding=UTF-8 -Dconsole.encoding=UTF-8 -XX:+ExitOnOutOfMemoryError -XX:ErrorFile=/tmp/java_error_%p.log -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/ -Dcom.sun.jndi.rmi.object.trustURLCodebase=false -Dcom.sun.jndi.cosnaming.object.trustURLCodebase=false -jar {{SERVER_JARFILE}}",
     "config": {
-        "files": "{\r\n    \"server.properties\": {\r\n        \"parser\": \"properties\",\r\n        \"find\": {\r\n            \"server-ip\": \"0.0.0.0\",\r\n            \"server-port\": \"{{server.build.default.port}}\",\r\n            \"query.port\": \"{{server.build.default.port}}\",\r\n            \"network-compression-threshold\": \"64\",\r\n            \"enable-rcon\": \"true\",\r\n            \"rcon.password\": \"yuracloud\",\r\n            \"rcon.port\": \"25575\"\r\n        }\r\n    }\r\n}",
+        "files": "{\r\n    \"server.properties\": {\r\n        \"parser\": \"properties\",\r\n        \"find\": {\r\n            \"server-ip\": \"0.0.0.0\",\r\n            \"server-port\": \"{{server.build.default.port}}\",\r\n            \"query.port\": \"{{server.build.default.port}}\",\r\n            \"network-compression-threshold\": \"64\"\r\n        }\r\n    }\r\n}",
         "startup": "{\r\n    \"done\": \")! For help, type \"\r\n}",
         "logs": "{}",
         "stop": "stop"

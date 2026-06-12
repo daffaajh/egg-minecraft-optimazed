@@ -3,8 +3,8 @@
 RESTART_TIME="$1"
 SERVER_STATE_FILE="$2"
 STATUS_FILE="$3"
+CMD_FIFO="$4"
 YURACLOUD_DIR="$HOME/YuraCloud/data"
-SERVER_DIR="${SERVER_DIR:-/home/container}"
 TZ="Asia/Jakarta"
 
 if [ -z "$RESTART_TIME" ]; then
@@ -21,31 +21,14 @@ RESTART_MINUTE=$((10#${RESTART_MINUTE_STR}))
 echo "[$(TZ=$TZ date '+%Y-%m-%d %H:%M:%S')] Auto-restart monitor started. Scheduled: $RESTART_TIME WIB" >> "$YURACLOUD_DIR/restart.log"
 
 # ==========================================
-# RCON Helper Function
+# Command Helper (writes to server stdin via FIFO)
 # ==========================================
 
-send_rcon() {
+send_cmd() {
     local cmd="$1"
-    if [ -n "$RCON_PASS" ] && [ -n "$RCON_PORT" ] && command -v rcon-cli &>/dev/null; then
-        rcon-cli --host 127.0.0.1 --port "$RCON_PORT" --password "$RCON_PASS" "$cmd" >/dev/null 2>&1
+    if [ -n "$CMD_FIFO" ] && [ -p "$CMD_FIFO" ]; then
+        echo "$cmd" >> "$CMD_FIFO"
     fi
-}
-
-# Read RCON config from server.properties
-# RCON port is derived from server port (server_port + 1) since Pterodactyl uses random ports
-get_rcon_config() {
-    local PROPS="$SERVER_DIR/server.properties"
-    if [ -f "$PROPS" ]; then
-        RCON_PASS=$(grep -E '^rcon\.password=' "$PROPS" | cut -d= -f2- | tr -d '[:space:]')
-        # Derive RCON port from actual server port (works with any Pterodactyl random port)
-        local SERVER_PORT=$(grep -E '^server-port=' "$PROPS" | cut -d= -f2 | tr -d '[:space:]')
-        if [ -n "$SERVER_PORT" ]; then
-            RCON_PORT=$((SERVER_PORT + 1))
-        else
-            RCON_PORT=$(grep -E '^rcon\.port=' "$PROPS" | cut -d= -f2 | tr -d '[:space:]')
-        fi
-    fi
-    RCON_PORT="${RCON_PORT:-25575}"
 }
 
 # ==========================================
@@ -82,8 +65,7 @@ while true; do
     # Send minute-level warnings
     for WARN_MIN in "${WARNING_MINUTES[@]}"; do
         if [ "$MINUTES_UNTIL" -eq "$WARN_MIN" ]; then
-            get_rcon_config
-            send_rcon "say [ YuraCloud ] Server akan restart dalam ${WARN_MIN} menit!"
+            send_cmd "say [ YuraCloud ] Server akan restart dalam ${WARN_MIN} menit!"
             echo "[$(TZ=$TZ date '+%Y-%m-%d %H:%M:%S')] Warning sent: ${WARN_MIN} minutes until restart" >> "$YURACLOUD_DIR/restart.log"
             break
         fi
@@ -105,12 +87,9 @@ while true; do
             exit 0
         fi
 
-        # Re-fetch RCON config for countdown
-        get_rcon_config
-
         # 10-second countdown
         for i in $(seq 10 -1 1); do
-            send_rcon "say [ YuraCloud ] Server akan restart dalam ${i} detik!"
+            send_cmd "say [ YuraCloud ] Server akan restart dalam ${i} detik!"
             echo "[$(TZ=$TZ date '+%Y-%m-%d %H:%M:%S')] Countdown: ${i} seconds" >> "$YURACLOUD_DIR/restart.log"
             sleep 1
 
@@ -121,7 +100,7 @@ while true; do
         done
 
         # Final restart command
-        send_rcon "say [ YuraCloud ] Server sedang restart..."
+        send_cmd "say [ YuraCloud ] Server sedang restart..."
         echo "[$(TZ=$TZ date '+%Y-%m-%d %H:%M:%S')] Triggering scheduled restart..." >> "$YURACLOUD_DIR/restart.log"
 
         # Cari PID Java process dan kill gracefully
