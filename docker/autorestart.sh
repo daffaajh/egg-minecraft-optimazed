@@ -103,11 +103,11 @@ while true; do
         send_cmd "say [ YuraCloud ] Server sedang restart..."
         echo "[$(TZ=$TZ date '+%Y-%m-%d %H:%M:%S')] Triggering scheduled restart..." | tee -a "$YURACLOUD_DIR/restart.log"
 
-        # Cari PID Java process dan kill gracefully
-        JAVA_PID=$(pgrep -f "java.*jar" | head -1)
-        if [ -n "$JAVA_PID" ]; then
-            kill -TERM "$JAVA_PID"
-            echo "[$(TZ=$TZ date '+%Y-%m-%d %H:%M:%S')] Sent SIGTERM to PID $JAVA_PID" | tee -a "$YURACLOUD_DIR/restart.log"
+        # Cari PID Java / PHP process dan kill gracefully
+        SERVER_PID=$(pgrep -f "(java.*jar|php.*PocketMine)" | head -1)
+        if [ -n "$SERVER_PID" ]; then
+            kill -TERM "$SERVER_PID"
+            echo "[$(TZ=$TZ date '+%Y-%m-%d %H:%M:%S')] Sent SIGTERM to PID $SERVER_PID" | tee -a "$YURACLOUD_DIR/restart.log"
         fi
 
         # Tunggu 2 menit sebelum cek lagi (avoid multiple restart di menit yang sama)
