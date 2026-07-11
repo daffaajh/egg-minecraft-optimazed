@@ -18,7 +18,7 @@ RESTART_MINUTE_STR=$(echo "$RESTART_TIME" | cut -d: -f2)
 RESTART_HOUR=$((10#${RESTART_HOUR_STR}))
 RESTART_MINUTE=$((10#${RESTART_MINUTE_STR}))
 
-echo "[$(TZ=$TZ date '+%Y-%m-%d %H:%M:%S')] Auto-restart monitor started. Scheduled: $RESTART_TIME WIB" >> "$YURACLOUD_DIR/restart.log"
+echo "[$(TZ=$TZ date '+%Y-%m-%d %H:%M:%S')] Auto-restart monitor started. Scheduled: $RESTART_TIME WIB" | tee -a "$YURACLOUD_DIR/restart.log"
 
 # ==========================================
 # Command Helper (writes to server stdin via FIFO)
@@ -43,7 +43,7 @@ while true; do
 
     # Cek apakah server masih running (cek state flag)
     if [ ! -f "$SERVER_STATE_FILE" ]; then
-        echo "[$(TZ=$TZ date '+%Y-%m-%d %H:%M:%S')] Server stopped. Auto-restart disabled." >> "$YURACLOUD_DIR/restart.log"
+        echo "[$(TZ=$TZ date '+%Y-%m-%d %H:%M:%S')] Server stopped. Auto-restart disabled." | tee -a "$YURACLOUD_DIR/restart.log"
         echo "inactive" > "$STATUS_FILE"
         exit 0
     fi
@@ -66,7 +66,7 @@ while true; do
     for WARN_MIN in "${WARNING_MINUTES[@]}"; do
         if [ "$MINUTES_UNTIL" -eq "$WARN_MIN" ]; then
             send_cmd "say [ YuraCloud ] Server akan restart dalam ${WARN_MIN} menit!"
-            echo "[$(TZ=$TZ date '+%Y-%m-%d %H:%M:%S')] Warning sent: ${WARN_MIN} minutes until restart" >> "$YURACLOUD_DIR/restart.log"
+            echo "[$(TZ=$TZ date '+%Y-%m-%d %H:%M:%S')] Warning sent: ${WARN_MIN} minutes until restart" | tee -a "$YURACLOUD_DIR/restart.log"
             break
         fi
     done
@@ -90,7 +90,7 @@ while true; do
         # 10-second countdown
         for i in $(seq 10 -1 1); do
             send_cmd "say [ YuraCloud ] Server akan restart dalam ${i} detik!"
-            echo "[$(TZ=$TZ date '+%Y-%m-%d %H:%M:%S')] Countdown: ${i} seconds" >> "$YURACLOUD_DIR/restart.log"
+            echo "[$(TZ=$TZ date '+%Y-%m-%d %H:%M:%S')] Countdown: ${i} seconds" | tee -a "$YURACLOUD_DIR/restart.log"
             sleep 1
 
             # Verify server is still running each second
@@ -101,13 +101,13 @@ while true; do
 
         # Final restart command
         send_cmd "say [ YuraCloud ] Server sedang restart..."
-        echo "[$(TZ=$TZ date '+%Y-%m-%d %H:%M:%S')] Triggering scheduled restart..." >> "$YURACLOUD_DIR/restart.log"
+        echo "[$(TZ=$TZ date '+%Y-%m-%d %H:%M:%S')] Triggering scheduled restart..." | tee -a "$YURACLOUD_DIR/restart.log"
 
         # Cari PID Java process dan kill gracefully
         JAVA_PID=$(pgrep -f "java.*jar" | head -1)
         if [ -n "$JAVA_PID" ]; then
             kill -TERM "$JAVA_PID"
-            echo "[$(TZ=$TZ date '+%Y-%m-%d %H:%M:%S')] Sent SIGTERM to PID $JAVA_PID" >> "$YURACLOUD_DIR/restart.log"
+            echo "[$(TZ=$TZ date '+%Y-%m-%d %H:%M:%S')] Sent SIGTERM to PID $JAVA_PID" | tee -a "$YURACLOUD_DIR/restart.log"
         fi
 
         # Tunggu 2 menit sebelum cek lagi (avoid multiple restart di menit yang sama)
